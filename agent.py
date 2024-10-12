@@ -2,6 +2,10 @@ import os
 import json
 from openai import OpenAI
 from pydantic import BaseModel
+from mail import send_email
+import csv
+import unicodedata
+import re
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 from dotenv import load_dotenv
@@ -80,7 +84,7 @@ class EmailResponse(BaseModel):
 def write_email(idea):
     response = client.beta.chat.completions.parse(model="gpt-4o",
         messages=[
-            {"role": "system", "content": "You are a helpful assistant to write an email to an acquitance, asking for honest feedback about a new business idea. Ask in a way that would encourage honest feedback, whether it's positive or negative, and specific suggestions. Include a link to the landing page at the end of the email by writing [LINK_HERE], do not try to give the link a title. If you write [FIRST_NAME], it will be replaced with the recipient's first name. Include no other placeholders. Make sure there are no asteriks for any reason, such as trying to bold some text."},
+            {"role": "system", "content": "You are a helpful assistant to write an email to an acquitance, asking for honest feedback about a new business idea. Ask in a way that would encourage honest feedback, whether it's positive or negative, and specific suggestions. Include a link to the landing page at the end of the email by writing [LINK_HERE], do not try to give the link a title. If you write [FIRST_NAME], it will be replaced with the recipient's first name. Include no other placeholders. Make sure there are no asteriks for any reason, such as trying to bold some text. End the email with 'Thanks for your help!'. Do not include placeholders like 'Thanks, [Your Name]'."},
             {"role": "user", "content": "Idea: title='AI-Based Language Learning Partner: Create an AI-driven language learning app that acts as a conversational partner, providing real-time corrections, suggestions, and practice scenarios for language learners to improve practical communication skills.', description='The AI-Based Language Learning Partner is a cutting-edge app designed for STEM teachers aiming to master a second language for communication with students from diverse linguistic backgrounds. By serving as an intelligent conversational partner, the app offers real-time corrections and constructive suggestions, enabling teachers to practice practical communication skills through various realistic scenarios like parent-teacher meetings and scientific discussions. This app stands out by customizing its interaction to the specific jargon and complexities of STEM subjects, thus making it an invaluable tool for teachers committed to improving their multilingual communication capabilities. It employs a subscription model tailored to educational institutions, providing bulk access at discounted rates, or individual subscriptions for personal professional development. Initially targeting the rapidly expanding community of bilingual STEM educational environments in urban areas, this app meets the needs of innovative teachers striving to engage with their diverse student population effectively. The landing page should feature testimonials from STEM teachers, a sneak peek into its AI-driven interactions, and a simple call-to-action for a free trial focused on STEM educational improvements.'"},
             {"role": "assistant", "content": """Subject: Quick feedback on business idea - AI Language Learning for STEM Teachers
 
@@ -109,10 +113,21 @@ Thanks in advance!"""},
             {"role": "user", "content": "\nIdea: " + idea},
         ],
         response_format=EmailResponse)
-    return response.choices[0].message.parsed
+    email = response.choices[0].message.parsed
+    email.content = email.content.replace('*', '', -1)
+    
+    # Replace all non-ASCII characters
+    email.content = unicodedata.normalize('NFKD', email.content).encode('ASCII', 'ignore').decode('ASCII')
+    email.subject = unicodedata.normalize('NFKD', email.subject).encode('ASCII', 'ignore').decode('ASCII')
+    
+    return email
+
+def split_emails(emails, num_splits):
+    return [emails[i::num_splits] for i in range(num_splits)]
 
 # Example usage
 if __name__ == "__main__":
+
     prompt = "Create a business in the AI-powered education space."
     ideas = brainstorm_ideas(prompt)
 
@@ -127,10 +142,15 @@ if __name__ == "__main__":
         
     best_ideas = pick_ideas(elaborated_ideas)
 
-    for idea in best_ideas.ideas:
+    all_emails = list(csv.reader(open('emails.csv')))
+    split_emails = split_emails(all_emails, len(best_ideas.ideas))
+
+    for i, idea in enumerate(best_ideas.ideas):
         print(idea.title)
         print(idea.description)
         email = write_email("Title: " + idea.title + "\nDescription: " + idea.description)
         print(email)
         print("\n\n")
-
+        for [name, send_address] in split_emails[i]:
+            email.content = email.content.replace('[FIRST_NAME]', name).replace('\u2019', "'")
+            send_email(email.subject, email.content, send_address)
