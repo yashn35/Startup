@@ -6,6 +6,7 @@ from mail import send_email
 import csv
 import unicodedata
 import re
+from generate_landing_page import main
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 from dotenv import load_dotenv
@@ -151,6 +152,7 @@ if __name__ == "__main__":
         email = write_email("Title: " + idea.title + "\nDescription: " + idea.description)
         print(email)
         print("\n\n")
-        for [name, send_address] in split_emails[i]:
-            email.content = email.content.replace('[FIRST_NAME]', name).replace('\u2019', "'")
-            send_email(email.subject, email.content, send_address)
+        main(idea.title + '\n' + idea.description, 'Luke Bousfield')
+        #for [name, send_address] in split_emails[i]:
+        #    email.content = email.content.replace('[FIRST_NAME]', name).replace('\u2019', "'")
+        #    send_email(email.subject, email.content, send_address)

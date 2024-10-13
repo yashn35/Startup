@@ -4,12 +4,13 @@ from smtplib import SMTP_SSL
 from dotenv import load_dotenv
 import os
 
-def send_email(subject, body, to_address):
-    load_dotenv()
+load_dotenv()
 
-    # create a mailslurp configuration
-    configuration = mailslurp_client.Configuration()
-    configuration.api_key['x-api-key'] = os.getenv('SLURP_API_KEY')
+# create a mailslurp configuration
+configuration = mailslurp_client.Configuration()
+configuration.api_key['x-api-key'] = os.getenv('SLURP_API_KEY')
+
+def send_email(subject, body, to_address):
     
     with mailslurp_client.ApiClient(configuration) as api_client:
         # create an inbox
@@ -29,3 +30,16 @@ def send_email(subject, body, to_address):
         except Exception as e:
             print(f"Error sending email: {str(e)}")
             return False
+
+def read_email(email_id):
+	with mailslurp_client.ApiClient(configuration) as api_client:
+		# create an inbox
+		email_controller = mailslurp_client.EmailControllerApi(api_client)
+
+		try:
+			email = email_controller.get_email(email_id=email_id)
+			print(email)
+			return True
+		except Exception as e:
+			print(f"Error reading email: {str(e)}")
+			return False

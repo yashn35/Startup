@@ -3,13 +3,14 @@ import os
 import requests
 import re
 import openai
+import random
 
 client = openai.Client(api_key=os.environ['OPENAI_API_KEY'],)
 
 # Generic function to generate text
 def generate_content(prompt):
     completion = client.chat.completions.create(
-        model="gpt-4o",
+        model="o1-mini",
         messages=[
             {"role": "system", "content": "You are to do exactly as told by the user. That is, if the user asks for a mission statement only generate the mission statement don't try to say something like 'Certainly! Here is a mission statement for a startup focused on creating innovative testing solutions', instead just say the Mission statement"},
             {
@@ -39,7 +40,7 @@ def generate_website_content(startup_info, cofounder_name):
 # Generic function to generate next.js code 
 def generate_code(prompt):
     completion = client.chat.completions.create(
-    model="gpt-4o",
+    model="o1-mini",
     messages=[
             {"role": "system", "content": "You are an agent only to generate Next.js code and Tailwind CSS. Only return raw code, don't respond to the user with some"},
             {
@@ -224,7 +225,10 @@ def main(startup_prompt, cofounder_name):
         generated_css = generate_css()
 
         # Create the Next.js app
-        project_name = startup_prompt.replace(' ', '-').lower()
+        project_name = startup_prompt.split()[:5]
+
+        words = ['apple', 'banana', 'cherry', 'date', 'elderberry', 'fig', 'grape', 'honeydew', 'kiwi', 'lemon']
+        project_name = '-'.join(random.sample(words, 5))
         create_nextjs_app(project_name)
 
         # Assemble the project
@@ -235,6 +239,3 @@ def main(startup_prompt, cofounder_name):
 
     except Exception as e:
         print(f"An error occurred in the deployment process: {e}")
-
-# Example usage
-main("Airbnb for dorms", "John Doe")
