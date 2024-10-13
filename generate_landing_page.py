@@ -57,7 +57,7 @@ def clean_code(code_str):
     Removes the ```typescript or ```javascript markers from a string
     """
     # Use regex to match and remove the code block markers
-    cleaned_code = re.sub(r'```(?:typescript|javascript|tsx)\n', '', code_str)
+    cleaned_code = re.sub(r'```(?:typescript|javascript|tsx|jsx)\n', '', code_str)
     # Also remove the closing ```
     cleaned_code = re.sub(r'```\n?', '', cleaned_code)
     return cleaned_code
@@ -70,15 +70,16 @@ def generate_index_js(startup_name, content, cofounder_name, cover_image_url, co
     - A section titled "Our Mission" with the following content: "{content['mission']}"
     - A section titled "About Us" with the following content: "{content['about']}"
     - An image of the co-founder {cofounder_name} with the image URL: "{cofounder_image_url}"
-    - A simple footer.
-    Make sure the component is a client component.
+    - A simple footer. test
+    Make sure the component is a client component and make sure the image URLs correctly render onto the page.
     '''
     generated_code = generate_code(code_prompt)
     cleaned_code = clean_code(generated_code)
 
-    if '"use client";' not in cleaned_code:
+    if 'use client' not in cleaned_code:
         cleaned_code = '"use client";\n\n' + cleaned_code
 
+    print(cleaned_code)
     return cleaned_code
 
 # Generate CSS for the page
@@ -148,7 +149,7 @@ def create_nextjs_app(project_name):
 def generate_image(prompt):
     response = client.images.generate(
         model="dall-e-3",
-        prompt="a white siamese cat",
+        prompt=prompt,
         size="1024x1024",
         quality="standard",
         n=1,
@@ -196,14 +197,38 @@ def assemble_project(project_name, generated_code, generated_css):
     write_to_file(css_path, generated_css)
 
 # Deploy to Vercel using the CLI
+# def deploy_to_vercel(project_name):
+#     # This command automates the deployment to Vercel and skips prompts
+#     subprocess.run([
+#         'vercel', 
+#         '--prod',          # Deploy in production mode
+#         '--confirm',       # Skip confirmation prompts
+#         '--name', project_name  # Specify the project name
+#     ], cwd=project_name, check=True)
+
 def deploy_to_vercel(project_name):
-    # This command automates the deployment to Vercel and skips prompts
-    subprocess.run([
-        'vercel', 
-        '--prod',          # Deploy in production mode
-        '--confirm',       # Skip confirmation prompts
-        '--name', project_name  # Specify the project name
-    ], cwd=project_name, check=True)
+    try:
+        result = subprocess.run(
+            ['vercel', '--prod', '--confirm', '--name', project_name],
+            cwd=project_name,
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        
+        # Search for the production URL in the command output
+        match = re.search(r'Production: (https?://[\w.-]+)', result.stdout)
+        if match:
+            return match.group(1)
+        else:
+            print("Could not find production URL in Vercel output.")
+            print(f"Vercel output:\n{result.stdout}")
+            return result.stdout
+    except subprocess.CalledProcessError as e:
+        print(f"Vercel deployment failed with exit code {e.returncode}")
+        print(f"Standard output:\n{e.stdout}")
+        print(f"Standard error:\n{e.stderr}")
+        return None
 
 # Main function to run the process
 def main(startup_prompt, cofounder_name):
@@ -235,7 +260,13 @@ def main(startup_prompt, cofounder_name):
         assemble_project(project_name, generated_code, generated_css)
 
         # Deploy the project to Vercel
-        deploy_to_vercel(project_name)
+        deployment_url = deploy_to_vercel(project_name)
+        if deployment_url:
+            print(f"Deployment successful. Production URL: {deployment_url}")
+        else:
+            print("Deployment failed or URL not found.")
+
+        return deployment_url        
 
     except Exception as e:
         print(f"An error occurred in the deployment process: {e}")
