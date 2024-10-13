@@ -56,7 +56,7 @@ def clean_code(code_str):
     Removes the ```typescript or ```javascript markers from a string
     """
     # Use regex to match and remove the code block markers
-    cleaned_code = re.sub(r'```(?:typescript|javascript|tsx)\n', '', code_str)
+    cleaned_code = re.sub(r'```(?:typescript|javascript|tsx|jsx)\n', '', code_str)
     # Also remove the closing ```
     cleaned_code = re.sub(r'```\n?', '', cleaned_code)
     return cleaned_code
@@ -69,15 +69,16 @@ def generate_index_js(startup_name, content, cofounder_name, cover_image_url, co
     - A section titled "Our Mission" with the following content: "{content['mission']}"
     - A section titled "About Us" with the following content: "{content['about']}"
     - An image of the co-founder {cofounder_name} with the image URL: "{cofounder_image_url}"
-    - A simple footer.
-    Make sure the component is a client component.
+    - A simple footer. test
+    Make sure the component is a client component and make sure the image URLs correctly render onto the page.
     '''
     generated_code = generate_code(code_prompt)
     cleaned_code = clean_code(generated_code)
 
-    if '"use client";' not in cleaned_code:
+    if 'use client' not in cleaned_code:
         cleaned_code = '"use client";\n\n' + cleaned_code
 
+    print(cleaned_code)
     return cleaned_code
 
 # Generate CSS for the page
@@ -147,7 +148,7 @@ def create_nextjs_app(project_name):
 def generate_image(prompt):
     response = client.images.generate(
         model="dall-e-3",
-        prompt="a white siamese cat",
+        prompt=prompt,
         size="1024x1024",
         quality="standard",
         n=1,
@@ -267,5 +268,5 @@ def main(startup_prompt, cofounder_name):
         print(f"An error occurred in the deployment process: {e}")
 
 # Example usage
-output = main("Airbnb for dorms", "John Doe")
+output = main("AirBnb for dorms", "Yash & Luke")
 print(output)
