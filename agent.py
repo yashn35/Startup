@@ -89,7 +89,7 @@ def write_email(idea):
             {"role": "user", "content": "Idea: title='AI-Based Language Learning Partner: Create an AI-driven language learning app that acts as a conversational partner, providing real-time corrections, suggestions, and practice scenarios for language learners to improve practical communication skills.', description='The AI-Based Language Learning Partner is a cutting-edge app designed for STEM teachers aiming to master a second language for communication with students from diverse linguistic backgrounds. By serving as an intelligent conversational partner, the app offers real-time corrections and constructive suggestions, enabling teachers to practice practical communication skills through various realistic scenarios like parent-teacher meetings and scientific discussions. This app stands out by customizing its interaction to the specific jargon and complexities of STEM subjects, thus making it an invaluable tool for teachers committed to improving their multilingual communication capabilities. It employs a subscription model tailored to educational institutions, providing bulk access at discounted rates, or individual subscriptions for personal professional development. Initially targeting the rapidly expanding community of bilingual STEM educational environments in urban areas, this app meets the needs of innovative teachers striving to engage with their diverse student population effectively. The landing page should feature testimonials from STEM teachers, a sneak peek into its AI-driven interactions, and a simple call-to-action for a free trial focused on STEM educational improvements.'"},
             {"role": "assistant", "content": """Subject: Quick feedback on business idea - AI Language Learning for STEM Teachers
 
-Hey [Friend's Name],
+Hey [YOUR_NAME],
 
 I've got a new business idea and would love your honest feedback:
 
@@ -152,7 +152,18 @@ if __name__ == "__main__":
         email = write_email("Title: " + idea.title + "\nDescription: " + idea.description)
         print(email)
         print("\n\n")
-        main(idea.title + '\n' + idea.description, 'Luke Bousfield')
-        #for [name, send_address] in split_emails[i]:
-        #    email.content = email.content.replace('[FIRST_NAME]', name).replace('\u2019', "'")
-        #    send_email(email.subject, email.content, send_address)
+        deployment_url = None
+        for i in range(1):
+            try:
+                deployment_url = main(idea.title + '\n' + idea.description, 'Luke Bousfield')
+            except Exception as e:
+                print(f"An error occurred in the deployment process: {e}")
+            if deployment_url:
+                break
+        if not deployment_url:
+            print(f"Failed to deploy {idea.title}")
+            continue
+        for [name, send_address] in split_emails[i]:
+            email.content = email.content.replace('[FIRST_NAME]', name).replace('\u2019', "'")
+            email.content = email.content.replace('[LINK_HERE]', deployment_url)
+            send_email(email.subject, email.content, send_address)

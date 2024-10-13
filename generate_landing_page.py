@@ -12,7 +12,7 @@ def generate_content(prompt):
     completion = client.chat.completions.create(
         model="o1-mini",
         messages=[
-            {"role": "system", "content": "You are to do exactly as told by the user. That is, if the user asks for a mission statement only generate the mission statement don't try to say something like 'Certainly! Here is a mission statement for a startup focused on creating innovative testing solutions', instead just say the Mission statement"},
+            {"role": "user", "content": "You are to do exactly as told by the user. That is, if the user asks for a mission statement only generate the mission statement don't try to say something like 'Certainly! Here is a mission statement for a startup focused on creating innovative testing solutions', instead just say the Mission statement"},
             {
                 "role": "user",
                 "content": prompt
@@ -42,7 +42,7 @@ def generate_code(prompt):
     completion = client.chat.completions.create(
     model="o1-mini",
     messages=[
-            {"role": "system", "content": "You are an agent only to generate Next.js code and Tailwind CSS. Only return raw code, don't respond to the user with some"},
+            {"role": "user", "content": "You are an agent only to generate Next.js code and Tailwind CSS. Only return raw code, don't respond to the user with some"},
             {
                 "role": "user",
                 "content": prompt
@@ -131,6 +131,16 @@ def generate_css():
     '''
     return css_content
 
+def write_eslint_config(project_name):
+    eslint_config = '''{
+  "extends": ["next/core-web-vitals", "next/typescript"],
+  "rules": {
+    "react/no-unescaped-entities": "off"
+  }
+}'''
+    eslint_path = os.path.join(project_name, '.eslintrc.json')
+    write_to_file(eslint_path, eslint_config)
+
 # Function to create the Next.js app
 def create_nextjs_app(project_name):
     subprocess.run([
@@ -142,7 +152,8 @@ def create_nextjs_app(project_name):
         '--app',              # Use App Router
         '--import-alias', '@/*',  # Customize import alias
         '--no-install',       # Skip package installation
-        '--use-npm'           # Use npm instead of yarn
+        '--use-npm',           # Use npm instead of yarn
+        '--public'
     ], check=True)
 
 #Generate image with DallE
@@ -255,6 +266,8 @@ def main(startup_prompt, cofounder_name):
         words = ['apple', 'banana', 'cherry', 'date', 'elderberry', 'fig', 'grape', 'honeydew', 'kiwi', 'lemon']
         project_name = '-'.join(random.sample(words, 5))
         create_nextjs_app(project_name)
+
+        write_eslint_config(project_name)
 
         # Assemble the project
         assemble_project(project_name, generated_code, generated_css)
