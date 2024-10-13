@@ -195,14 +195,38 @@ def assemble_project(project_name, generated_code, generated_css):
     write_to_file(css_path, generated_css)
 
 # Deploy to Vercel using the CLI
+# def deploy_to_vercel(project_name):
+#     # This command automates the deployment to Vercel and skips prompts
+#     subprocess.run([
+#         'vercel', 
+#         '--prod',          # Deploy in production mode
+#         '--confirm',       # Skip confirmation prompts
+#         '--name', project_name  # Specify the project name
+#     ], cwd=project_name, check=True)
+
 def deploy_to_vercel(project_name):
-    # This command automates the deployment to Vercel and skips prompts
-    subprocess.run([
-        'vercel', 
-        '--prod',          # Deploy in production mode
-        '--confirm',       # Skip confirmation prompts
-        '--name', project_name  # Specify the project name
-    ], cwd=project_name, check=True)
+    try:
+        result = subprocess.run(
+            ['vercel', '--prod', '--confirm', '--name', project_name],
+            cwd=project_name,
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        
+        # Search for the production URL in the command output
+        match = re.search(r'Production: (https?://[\w.-]+)', result.stdout)
+        if match:
+            return match.group(1)
+        else:
+            print("Could not find production URL in Vercel output.")
+            print(f"Vercel output:\n{result.stdout}")
+            return result.stdout
+    except subprocess.CalledProcessError as e:
+        print(f"Vercel deployment failed with exit code {e.returncode}")
+        print(f"Standard output:\n{e.stdout}")
+        print(f"Standard error:\n{e.stderr}")
+        return None
 
 # Main function to run the process
 def main(startup_prompt, cofounder_name):
@@ -231,10 +255,17 @@ def main(startup_prompt, cofounder_name):
         assemble_project(project_name, generated_code, generated_css)
 
         # Deploy the project to Vercel
-        deploy_to_vercel(project_name)
+        deployment_url = deploy_to_vercel(project_name)
+        if deployment_url:
+            print(f"Deployment successful. Production URL: {deployment_url}")
+        else:
+            print("Deployment failed or URL not found.")
+
+        return deployment_url        
 
     except Exception as e:
         print(f"An error occurred in the deployment process: {e}")
 
 # Example usage
-main("Airbnb for dorms", "John Doe")
+output = main("Airbnb for dorms", "John Doe")
+print(output)
